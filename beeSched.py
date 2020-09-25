@@ -12,7 +12,7 @@ import time
 
 
 PORT = 5200
-JOB_CNT = 10
+JOB_CNT = 4
 
 class BeeSched(batsim.BatsimScheduler):
     """BEE Scheduler Interface class.
@@ -37,6 +37,8 @@ class BeeSched(batsim.BatsimScheduler):
         print('onAfterBatsimInit()')
         # self.submitted_jobs = []
         self.machines = [i for i in range(self.bs.nb_resources)]
+        with open('resources.txt', 'w') as fp:
+            print(self.machines, file=fp)
 
         # TODO: Sorting everytime we add/remove jobs in self.machines is not
         # good
@@ -53,7 +55,7 @@ class BeeSched(batsim.BatsimScheduler):
             '-p', str(PORT),
             '--no-config',
             # '--algorithm', 'sjf',
-            '--algorithm', 'mars',
+            '--algorithm', 'backfill',
             # '--use-mars',
             # '--mars-model', 'model/',
         ], shell=False)
@@ -89,15 +91,6 @@ class BeeSched(batsim.BatsimScheduler):
         for machine in job.allocation:
             self.machines.append(machine)
         self.machines.sort()
-        # if len(self.machines) <= self.bs.nb_resources and self.submitted_jobs:
-        #    self.schedule()
-
-    #def onJobsKilled(self, jobs):
-    #    """Killing jobs.
-
-    #    Killing jobs.
-    #    """
-    #    # TODO
 
     def onNoMoreEvents(self):
         """No more events coming.
@@ -136,8 +129,9 @@ class BeeSched(batsim.BatsimScheduler):
                 'workflow_name': workflow_name,
                 'task_name': str(i),
                 'requirements': {
-                    'max_runtime': 1,
-                    'nodes': 1,
+                    'max_runtime': (job.requested_time
+                                    if job.requested_time > 0 else 1),
+                    'nodes': job.requested_resources,
                 },
             }
             for i, job in enumerate(self.submitted_jobs)
@@ -145,17 +139,12 @@ class BeeSched(batsim.BatsimScheduler):
         ]
         r = requests.put(f'{self.url}/workflows/{workflow_name}/jobs',
                          json=tasks)
-
-
         assert r.ok
         data = r.json()
 
         # Sort the task data by start_time
         data.sort(key=lambda task: task['allocations'][0]['start_time']
                                     if task['allocations'] else 0)
-
-        #with open('test.json', 'w') as fp:
-        #    json.dump(data, fp=fp)
 
         last_time = 0
         for task in data:
@@ -165,18 +154,25 @@ class BeeSched(batsim.BatsimScheduler):
                 # Set the allocation properly
                 # TODO: This only works for single allocations
                 alloc = [self.machines[int(alloc['id_'])] for alloc in task['allocations']]
-                assert len(alloc) == 1
-                job.allocation = procset.ProcSet(alloc[0])
-                # print('ALLOC', alloc)
-                # job.alloc = task['allocations']
+                with open('alloc.txt', 'w') as fp:
+                    print(alloc, file=fp)
+                # Allocations must be sorted
+                alloc.sort()
+                job.allocation = procset.ProcSet(*alloc)
                 # Schedule tasks that need to run
                 start_time = int(task['allocations'][0]['start_time'])
+
+                with open('tasks.json', 'w') as fp:
+                    json.dump(data, fp=fp, indent=4)
+                with open('resources.json', 'w') as fp:
+                    json.dump(resources, fp=fp, indent=4)
+
                 if last_time != start_time and ready:
                     self.bs.execute_jobs(ready)
                     ready.clear()
                 time = start_time - last_time
                 if time > 0:
-                    self.bs.consume_time(start_time - last_time)
+                    self.bs.consume_time(time)
                 last_time = start_time
                 ready.append(job)
             else:
