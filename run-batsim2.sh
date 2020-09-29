@@ -6,9 +6,11 @@ ch-run batsim-img/oarteam.batsim-2020-09-14/ \
 	/bin/batsim \
 	-- \
 	-p batsim/platforms/cluster512.xml \
-	-w synthetic_small-workload.json \
+	-w HPC2N-2002-2.2-cln.json \
 	-e /data/out/batsim \
 	--enable-compute-sharing
+	# -w ANL-Intrepid-2009-1-workload.json \
+	# -w synthetic_small-workload.json \
 	# -w ANL-Intrepid-2009-1-workload.json \
 	# -w batsim/workloads/test_walltime.json \
 	# -p new.xml \

@@ -12,7 +12,7 @@ import time
 
 
 PORT = 5200
-JOB_CNT = 4
+JOB_CNT = 32
 
 class BeeSched(batsim.BatsimScheduler):
     """BEE Scheduler Interface class.
@@ -88,9 +88,9 @@ class BeeSched(batsim.BatsimScheduler):
         Job completion.
         """
         print('onJobCompletion()')
-        for machine in job.allocation:
-            self.machines.append(machine)
-        self.machines.sort()
+        #for machine in job.allocation:
+        #    self.machines.append(machine)
+        #self.machines.sort()
 
     def onNoMoreEvents(self):
         """No more events coming.
@@ -147,6 +147,8 @@ class BeeSched(batsim.BatsimScheduler):
                                     if task['allocations'] else 0)
 
         last_time = 0
+        # TODO: This loop may need to be redesigned in order to work effectively
+        # with the scheduler
         for task in data:
             i = int(task['task_name'])
             job = self.submitted_jobs[i]
