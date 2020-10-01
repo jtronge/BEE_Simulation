@@ -41,9 +41,6 @@ class BeeSched(batsim.BatsimScheduler):
         with open('resources.txt', 'w') as fp:
             print(self.machines, file=fp)
 
-        # TODO: Sorting everytime we add/remove jobs in self.machines is not
-        # good
-
     def onSimulationBegins(self):
         """Simulation start.
 
@@ -87,9 +84,6 @@ class BeeSched(batsim.BatsimScheduler):
         Job completion.
         """
         print('onJobCompletion()')
-        #for machine in job.allocation:
-        #    self.machines.append(machine)
-        #self.machines.sort()
 
     def onNoMoreJobsInWorkloads(self):
         """No more jobs are ready to be scheduled.
@@ -100,15 +94,6 @@ class BeeSched(batsim.BatsimScheduler):
         # Schedule jobs if any are submitted
         if self.submitted_jobs:
             self.schedule()
-
-    #def onNoMoreEvents(self):
-    #    """No more events coming.
-
-    #    No more events coming in.
-    #    """
-    #    print('onNoMoreEvents()')
-    #    if self.submitted_jobs:
-    #        self.schedule()
 
     def schedule(self):
         """Schedule submitted jobs.
