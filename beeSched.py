@@ -13,6 +13,7 @@ import time
 
 PORT = 5200
 JOB_CNT = 32
+DEFAULT_MAX_RUNTIME = 128
 
 class BeeSched(batsim.BatsimScheduler):
     """BEE Scheduler Interface class.
@@ -48,7 +49,6 @@ class BeeSched(batsim.BatsimScheduler):
 
         Simulation start.
         """
-        # TODO: Launch BEE Scheduler
         os.chdir('BEE_Private/')
         self.proc = subprocess.Popen([
             'python', 'beeflow/scheduler/scheduler.py',
@@ -67,7 +67,6 @@ class BeeSched(batsim.BatsimScheduler):
 
         Simulation end.
         """
-        # TODO: Kill BEE Scheduler
         self.proc.terminate()
 
     def onJobSubmission(self, job):
@@ -92,14 +91,24 @@ class BeeSched(batsim.BatsimScheduler):
         #    self.machines.append(machine)
         #self.machines.sort()
 
-    def onNoMoreEvents(self):
-        """No more events coming.
+    def onNoMoreJobsInWorkloads(self):
+        """No more jobs are ready to be scheduled.
 
-        No more events coming in.
+        This is a NOTIFY sent by Batsim saying that there are no more jobs left
+        to send over.
         """
-        print('onNoMoreEvents()')
+        # Schedule jobs if any are submitted
         if self.submitted_jobs:
             self.schedule()
+
+    #def onNoMoreEvents(self):
+    #    """No more events coming.
+
+    #    No more events coming in.
+    #    """
+    #    print('onNoMoreEvents()')
+    #    if self.submitted_jobs:
+    #        self.schedule()
 
     def schedule(self):
         """Schedule submitted jobs.
@@ -129,8 +138,11 @@ class BeeSched(batsim.BatsimScheduler):
                 'workflow_name': workflow_name,
                 'task_name': str(i),
                 'requirements': {
+                    # 'max_runtime': (job.requested_time
+                    #                 if job.requested_time > 0 else 1),
                     'max_runtime': (job.requested_time
-                                    if job.requested_time > 0 else 1),
+                                    if job.requested_time > 0
+                                    else DEFAULT_MAX_RUNTIME),
                     'nodes': job.requested_resources,
                 },
             }
@@ -164,6 +176,9 @@ class BeeSched(batsim.BatsimScheduler):
                 # Schedule tasks that need to run
                 start_time = int(task['allocations'][0]['start_time'])
 
+                task_map = [(i, job.id) for i, job in enumerate(self.submitted_jobs)]
+                with open('task_map.json', 'w') as fp:
+                    json.dump(task_map, fp=fp, indent=4)
                 with open('tasks.json', 'w') as fp:
                     json.dump(data, fp=fp, indent=4)
                 with open('resources.json', 'w') as fp:
@@ -174,7 +189,8 @@ class BeeSched(batsim.BatsimScheduler):
                     ready.clear()
                 time = start_time - last_time
                 if time > 0:
-                    self.bs.consume_time(time)
+                    # Add 0.01 to avoid overlap
+                    self.bs.consume_time(time + 0.01)
                 last_time = start_time
                 ready.append(job)
             else:
