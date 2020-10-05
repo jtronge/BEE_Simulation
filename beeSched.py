@@ -12,7 +12,7 @@ import time
 
 
 PORT = 5200
-JOB_CNT = 32
+JOB_CNT = 16
 DEFAULT_MAX_RUNTIME = 128
 
 class BeeSched(batsim.BatsimScheduler):
@@ -40,6 +40,9 @@ class BeeSched(batsim.BatsimScheduler):
         self.machines = [i for i in range(self.bs.nb_resources)]
         with open('resources.txt', 'w') as fp:
             print(self.machines, file=fp)
+
+        # Have we scheduled everything yet?
+        self.scheduled = False
 
     def onSimulationBegins(self):
         """Simulation start.
@@ -74,7 +77,9 @@ class BeeSched(batsim.BatsimScheduler):
         print('onJobSubmission()')
         print(job.job_state)
         self.submitted_jobs.append(job)
-        if len(self.submitted_jobs) >= JOB_CNT:
+        if not self.scheduled and len(self.submitted_jobs) >= JOB_CNT:
+            print(len(self.submitted_jobs))
+            self.scheduled = True
             print('Scheduling...')
             self.schedule()
 
@@ -92,8 +97,11 @@ class BeeSched(batsim.BatsimScheduler):
         to send over.
         """
         # Schedule jobs if any are submitted
+        #if self.submitted_jobs:
+        #    self.scheduled += len(self.submitted_jobs)
+        #    self.schedule()
         if self.submitted_jobs:
-            self.schedule()
+            self.bs.reject_jobs(self.submitted_jobs)
 
     def schedule(self):
         """Schedule submitted jobs.

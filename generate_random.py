@@ -7,7 +7,7 @@ import random
 import sys
 
 
-nb_res = random.randint(0, 512)
+nb_res = random.randint(1, 32)
 task_group_cnt = random.randint(1, 20)
 task_cnt = random.randint(1, 20)
 
@@ -28,8 +28,12 @@ for i in range(task_group_cnt):
         })
         usage_total.append((res, walltime))
     # TODO: Change the subtime here
-    subtime += random.randint(1, 1000)
-# TODO
+    total_walltime = sum((res / nb_res) * walltime
+                         for res, walltime in usage_total)
+    max_walltime = max(walltime for res, walltime in usage_total)
+    total_walltime = (total_walltime if total_walltime > max_walltime
+                      else max_walltime)
+    subtime += total_walltime + 40
 
 data = {
     'nb_res': nb_res,

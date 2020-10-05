@@ -5,9 +5,15 @@ ch-run batsim-img/oarteam.batsim-2020-09-14/ \
 	-c /data \
 	/bin/batsim \
 	-- \
-	-p batsim/platforms/cluster512.xml \
-	-w synthetic_small-test-workload.json \
-	-e /data/out/batsim
+	-p platforms/cluster512.xml \
+	-w ANL-Intrepid-2009-1-small.json \
+	-e /data/out/batsim \
+	--enable-compute-sharing
+	# -p platforms/cluster16.xml \
+	# -w SDSC-SP2-1998-4.2-cln.json \
+	# -w synthetic_small-test-workload-3.json \
+	# -w synthetic_small-test-workload.json \
+	# -p batsim/platforms/cluster512.xml \
 	# -p batsim/platforms/small_platform.xml \
 	# -w HPC2N-test-workload.json \
 	# -p batsim/platforms/cluster_locality_8x16.xml \
